@@ -1,0 +1,70 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <libusb-1.0/libusb.h>
+
+int VENDOR = 1240; /* 0451 */
+int PRODUCT = 64607; /* 3211 */
+
+libusb_device_handle** findL12(libusb_device **devs) {
+    libusb_device *dev;
+    libusb_device_handle **handle;
+    int i = 0;
+    struct libusb_device_descriptor desc;
+    libusb_get_device_descriptor(dev, &desc);
+    if (desc.idVendor == VENDOR && desc.idProduct == PRODUCT) {
+	libusb_open(dev, handle);            
+	printf("Found Linear Firgelli L12.\n");            
+        return handle;
+    }
+    return handle;
+}
+
+int main() {
+    libusb_device **devs;
+    libusb_context *ctx = NULL;
+    
+    libusb_init(NULL);
+
+    libusb_get_device_list(NULL, &devs);
+    
+    //libusb_device_handle **handle = findL12(devs);
+    fprintf(handle);
+    if (handle==NULL) {
+        fprintf(stderr, "No logging system found.\n");
+    }
+/*
+    unsigned char ENDPOINT_DOWN = 0x20;
+    unsigned char ENDPOINT_UP = 0x81;
+    int actual_length;
+    unsigned char dataUp[64];
+    unsigned char dataDown[64];
+    for(int j=0;j<64;j++) { dataDown[j] = 0; }
+    dataDown[0] = 4;
+    libusb_bulk_transfer(handle[0], ENDPOINT_DOWN, dataDown, sizeof(dataDown), &actual_length, 0);
+    dataDown[0] = 3;
+    for(int i=0; i<10000; i++) {
+        r = libusb_bulk_transfer(handle[0], ENDPOINT_DOWN, dataDown,
+                                 sizeof(dataDown), &actual_length, 0);
+	r = libusb_bulk_transfer(handle[0], ENDPOINT_UP, dataUp,
+                                 sizeof(dataUp), &actual_length, 1000);
+        if (r == 0 && actual_length == sizeof(dataUp)) {
+            if (dataUp[0]!=0 || dataUp[1]!=0) {
+                printf("Data: ");
+                for(int j=0;j<64;j++) {
+                    printf("%02x ",dataUp[j]);
+                }
+                printf("\n");
+            }
+            sleep(1);
+        } else {
+            printf("Something went wrong (r == %i, actual_length == %i , sizeof(data) == %lu ).\n",
+                   r, actual_length, sizeof(dataUp));
+        }
+
+    }
+*/
+    libusb_free_device_list(devs, 1);
+    libusb_exit(NULL);
+    return 0;
+}

@@ -1,0 +1,26 @@
+#ifndef _FIRGELLI_H
+#define _FIRGELLI_H
+
+#include <libusb-1.0/libusb.h>
+
+class Firgelli{
+public:
+	Firgelli();
+	~Firgelli();
+	void SetDebug(int m);
+	void Open(int rank);
+	int WriteCode(int location, int value);
+	void Info();
+
+private:
+	int m_interface;
+	libusb_device_handle *m_handle1;
+	libusb_device_handle *m_handle2;
+	libusb_device_handle *m_handle3;
+	struct libusb_context *m_ctx1;
+	struct libusb_context *m_ctx2;
+	struct libusb_context *m_ctx3;
+	static const char *ControlType(int attr);
+	static int m_debug;
+};
+#endif

@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <libusb.h>
+
+uint16_t VENDOR = 1240; /* =0x04d8 */
+uint16_t PRODUCT = 64607; /* =0xfc5f */
+
+libusb_device_handle** find_l12(libusb_device **devs) {
+    libusb_device *dev;
+    libusb_device_handle **handle;
+    int i = 0;
+    printf("Cari Linear L12\n");
+    while ((dev = devs[i++]) != NULL) {
+        struct libusb_device_descriptor desc;
+        int r = libusb_get_device_descriptor(dev, &desc);
+        if (r < 0) {
+            fprintf(stderr, "failed to get device descriptor");
+            return NULL;
+        }
+        printf("%04x:%04x (bus %d, device %d)\n",
+            desc.idVendor, desc.idProduct,libusb_get_bus_number(dev), libusb_get_device_address(dev));
+        if (desc.idVendor == VENDOR && desc.idProduct == PRODUCT) {
+            printf("Found Linear L12\n");
+            int usb_open = libusb_open(dev, handle);
+            if (usb_open==0) {
+                printf("libusb_open successful\n");
+                return handle;
+            }
+            fprintf(stderr, "libusb_open failed. Error code %d\n", usb_open);
+            return handle;
+        }
+    }
+    return NULL;
+}
+
+int main() {
+    libusb_device **devs;
+    int r;
+    ssize_t cnt;
+
+    r = libusb_init(NULL);
+    if (r < 0)		return r;
+
+    cnt = libusb_get_device_list(NULL, &devs);
+    if (cnt < 0)	return (int) cnt;
+
+    libusb_device_handle **handle = find_l12(devs);
+
+    if (handle==NULL) {
+        fprintf(stderr, "No logging system found.n");
+        libusb_free_device_list(devs, 1);
+        libusb_exit(NULL);
+        return -1;
+    }
+
+    unsigned char SET_POSITION = 0x20;
+    unsigned char ENDPOINT_UP = 0x81;
+    int actual_length,value;
+    unsigned char dataUp[64];
+    unsigned char dataDown[64];
+    if (value > 1023) value = 1023;
+    if (value < 0) value = 0;
+    dataUp[0] = SET_POSITION;							// Command
+    dataUp[1] = (unsigned char) value;				// Data Low
+    dataUp[2] = (unsigned char) (value >> 8); 		// Data High
+    for(int j=0;j<1024;j++) { dataDown[j] = 0; }
+//    dataDown[0] = 4;
+    libusb_bulk_transfer(handle[0], SET_POSITION, dataUp, sizeof(dataUp), &actual_length, 0);
+//    dataDown[0] = 3;
+/*
+    for(int i=0; i<10000; i++) {
+        r = libusb_bulk_transfer(handle[0], ENDPOINT_DOWN, dataDown,sizeof(dataDown), &actual_length, 0);
+        r = libusb_bulk_transfer(handle[0], ENDPOINT_UP, dataUp,sizeof(dataUp), &actual_length, 1000);
+        if (r == 0 && actual_length == sizeof(dataUp)) {
+            if (dataUp[0]!=0 || dataUp[1]!=0) {
+                printf("Data: ");
+                for(int j=0;j<64;j++) {
+                    printf("%02x ",dataUp[j]);
+                }
+                printf("n");
+            }
+            sleep(1);
+        } else {
+            printf("Something went wrong (r == %i, actual_length == %i , sizeof(data) == %u )\n",
+                   r, actual_length, sizeof(dataUp));
+        }
+    }
+*/
+    libusb_free_device_list(devs, 1);
+    libusb_exit(NULL);
+    return 0;
+}
